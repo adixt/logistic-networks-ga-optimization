@@ -6,6 +6,7 @@ classdef TopologyGenerator
         
         LT;
         L; % max lead time
+        TC; % transportation cost
         
         LA_nom;
         LA;
@@ -23,6 +24,7 @@ classdef TopologyGenerator
             % Situation of supplying external source is excluded by restricting
             % dimension to (n+m,n)
             obj.LT = zeros(obj.n+obj.m,obj.n);
+            obj.TC = zeros(obj.n+obj+m, obj.n);            
             
             for index=1:obj.n-1
                obj.LT(index, index+1) = round(1+10*rand(1,1));

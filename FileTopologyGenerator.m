@@ -6,6 +6,7 @@ classdef FileTopologyGenerator
         
         LT;
         L; % max lead time
+        TC; % transportation cost
         
         LA_nom;
         LA;
@@ -19,7 +20,7 @@ classdef FileTopologyGenerator
             obj.m = topologyFile.network.m; % nr of external sources
             obj.n = topologyFile.network.n;  % nr of controlled nodes
             
-
+            obj.TC = topologyFile.network.TC;
             obj.LT = topologyFile.network.LT;            
             obj.L = max(obj.LT(:));
             obj.LA_nom(:,:,1) = topologyFile.network.LA_nom;

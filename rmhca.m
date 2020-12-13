@@ -7,7 +7,7 @@ beginApplicationTic = tic();
 
 chartVisibility = true;
 fileGenerator = true;
-generations = 5000;
+generations = 30;
 stepRange = 10;
 learningBreak = 500;
 
@@ -17,8 +17,8 @@ topologyFilename = 'topologies/2_100_a.mat';
 % GA parameters
 generationSize = 10;
 mutationProbability = 0.01;
-alpha = 10;
-beta = 40;
+alpha = 1;
+beta = 2;
 resultGenerationNo = 0;
 
 x_inf = 100000; % infinite stock at external sources
@@ -30,7 +30,12 @@ m = 3; % nr of external sources
 
 % network = TopologyGenerator(simTime, m);
 network = FileTopologyGenerator(topologyFilename);
-
+network.TC(4, 1) = 0.18;
+network.TC(5, 2) = 0.26;
+network.TC(2, 3) = 2;
+network.TC(1, 3) = 1.5;
+network.TC(1, 2) = 0.74;
+TC = network.TC;
 simTime = network.simTime;
 n = network.n;
 m = network.m;
@@ -95,7 +100,7 @@ end
 
 dmean = mean(d, 2);
 dstd = std(d, 0, 2);
-xd_min = ceil((eye(n) + temp) * inv(Lambda) * dmax) + 1
+xd_min = ceil((eye(n) + temp) * inv(Lambda) * dmax) + 1;
 
 xd = [xd_min; 0; 0]; % reference stock level (see calculation of xd_min below)
 
@@ -104,18 +109,23 @@ x(1:n + m, 1) = [xd_min; xd_min_source']; % initial stock level
 
 start_xd_min = xd_min;
 best_simulation = 0;
-a = NetworkSimulator(simTime, n, m, L, LT, LA, d, LA_nom, B_nom);
+a = NetworkSimulator(simTime, n, m, L, LT, LA, d, LA_nom, B_nom, TC);
 
 % Main loop
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-a = simulate(a, xd_min);
+a = simulate(a, start_xd_min, LA_nom);
+fprintf('Mean Bullwhip Effect = %d', a.w4);
 initial_HC = a.HC;
-
+a.initialBE = a.w4;
+a.initialTTC = a.TTC;
 a.initialHC = initial_HC;
 a.alpha = alpha;
 a.beta = beta;
 
 best_HC = a.HC;
+best_TTC = a.TTC;
+best_BE = a.w4;
+best_LA = a.LA_nom;
 best_xd_min = a.xd(1:n);
 last_good_xdmin = best_xd_min;
 
@@ -156,9 +166,13 @@ switch methodTypeChars
                     best_HC = min(best_HC, min(temp_res(temp_res > 0)));
                 end
 
+                if (best_TTC > min(best_TTC, min(temp_res(temp_res > 0))))
+                    best_TTC = min(best_TTC, min(temp_res(temp_res > 0)));
+                end
+
             end
 
-            best_HC
+            best_TTC
             fprintf(' in %d seconds\n', toc);
         end
 
@@ -173,6 +187,7 @@ switch methodTypeChars
 
             if (a.isCrashed ~= true && a.HC < best_HC)
                 best_HC = a.HC;
+                best_TTC = a.TTC;
                 best_xd_min = a.xd(1:n);
                 last_good_xdmin = xd_min;
                 stop = 0;
@@ -189,26 +204,19 @@ switch methodTypeChars
         end
 
     case char('ga')
-        individuals = zeros(n, generationSize);
+        individuals =GenerateIndividuals(n,m, LA_nom, generationSize);
 
         best_set = zeros(n, 1);
         best_fitness = 0;
         stop = 0;
-
-        for individualNo = 1:generationSize
-
-            for node = 1:n
-                individuals(node, individualNo) = round(rand(1) * start_xd_min(node));
-            end
-
-        end
-
-        gaProcessArchive = GAProcessArchive(topologyFilename)
+         
+        gaProcessArchive = GAProcessArchive(topologyFilename);
 
         while generationsDone < generations
             generationsDone = generationsDone + 1;
 
             gaProcessArchive.bestHCCourse(generationsDone) = best_HC;
+            gaProcessArchive.bestTTCourse(generationsDone) = best_TTC;
             gaProcessArchive.bestFitnessCourse(generationsDone) = best_fitness;
 
             individualFitnesses = zeros(1, generationSize);
@@ -217,20 +225,25 @@ switch methodTypeChars
             unproductivity = 0;
 
             for individualNo = 1:generationSize
-                xd_min = individuals(:, individualNo);
-                a = simulate(a, xd_min);
+                LAmutated = individuals(:,:, individualNo);
+                a = simulate(a, start_xd_min, LAmutated);
                 individualFitnesses(individualNo) = a.fitness;
 
                 gaProcessArchive.fitnessCourse(:, end + 1) = [generationsDone; a.fitness];
                 gaProcessArchive.HCCourse(:, end + 1) = [generationsDone; a.HC];
+                gaProcessArchive.TTCCourse(:, end + 1) = [generationsDone; a.TTC];
 
                 if individualFitnesses(individualNo) > best_fitness
                     best_fitness = individualFitnesses(individualNo);
-                    best_xd_min = xd_min
-                    best_HC = a.HC
+                    best_xd_min = xd_min;
+                    best_HC = a.HC;
+                    best_LA = a.LA_nom;
+                    best_TTC = a.TTC
+                    best_BE=a.w4
                     resultGenerationNo = generationsDone
 
                     gaProcessArchive.bestHCFixes(:, end + 1) = [generationsDone; best_HC];
+                    gaProcessArchive.bestTTCFixes(:, end + 1) = [generationsDone; best_TTC];
                     gaProcessArchive.bestFitnessFixes(:, end + 1) = [generationsDone; best_fitness];
 
                     stop = 0;
@@ -253,34 +266,46 @@ switch methodTypeChars
             end
 
             fitSum = sum(individualFitnesses);
-            pairs = [];
+            pairs = zeros(n+m,n,1);
+            addedFirst = false;
 
             while true
                 fitRandom = rand;
 
                 for individualNo = 1:generationSize
-
+   
+                    summ= (sum(individualFitnesses(1:individualNo)));
+                    sumdiv = summ/fitSum;
                     if fitRandom < (sum(individualFitnesses(1:individualNo)) / fitSum)
 
                         if (individualUsed(individualNo) == 1)
                             break;
                         end
-
-                        pairs = [pairs, individuals(:, individualNo)];
+                        
+                        ttt=size(pairs,3);   
+                        if( addedFirst == true )
+                             pairs(:,:,ttt+1) = individuals(:, :, individualNo);                       
+                        else
+                            
+                             pairs(:,:,ttt) = individuals(:, :, individualNo);  
+                             addedFirst = true;
+                        end
+                        
                         individualUsed(individualNo) = 1;
                         break;
                     end
 
                 end
 
-                if size(pairs, 2) == generationSize
+                if size(pairs, 3) == generationSize
                     break;
-                elseif size(pairs, 2) == generationSize - 1
+                elseif size(pairs, 3) == generationSize - 1
 
                     for individualNo = 1:individualNo
 
                         if (individualUsed(individualNo) == 0)
-                            pairs = [pairs, individuals(:, individualNo)];
+                            ttt=size(pairs,3);   
+                            pairs(:,:,ttt+1) = individuals(:, :, individualNo);  
                             individualUsed(individualNo) = 1;
                             break;
                         end
@@ -294,10 +319,10 @@ switch methodTypeChars
             i = round(rand(1) * (n - 1)) + 1;
 
             for index = 1:2:generationSize
-                individuals(1:i, index) = pairs(1:i, index);
-                individuals(i + 1:end, index) = pairs(i + 1:end, index + 1);
-                individuals(1:i, index + 1) = pairs(1:i, index + 1);
-                individuals(i + 1:end, index + 1) = pairs(i + 1:end, index);
+                individuals(:,1:i, index) = pairs(:,1:i, index);
+                individuals(:,i + 1:end, index) = pairs(:,i + 1:end, index + 1);
+                individuals(:,1:i, index + 1) = pairs(:,1:i, index + 1);
+                individuals(:,i + 1:end, index + 1) = pairs(:,i + 1:end, index);
             end
 
             for individualNo = 1:generationSize
@@ -306,7 +331,9 @@ switch methodTypeChars
                     randomMutation = rand;
 
                     if randomMutation < mutationProbability
-                        individuals(node, individualNo) = round(rand(1) * start_xd_min(node));
+                        laToMutate = individuals(:,:, individualNo);
+                        muteated = GenerateIndividuals(n,m,laToMutate,1);
+                        individuals(:,:, individualNo) = muteated;
                     end
 
                 end
@@ -319,19 +346,21 @@ switch methodTypeChars
         disp('Optimization method not found! Try again!\n')
 end
 
-a = simulate(a, best_xd_min);
+a = simulate(a, best_xd_min, best_LA);
 
 TimeSpent = toc(beginApplicationTic);
 
 % DEBUG HOLDING COST
 a.xd(1:n)
-round(initial_HC)
-round(a.HC)
+round(a.initialTTC)
+round(a.TTC)
 a.satisfiedRate
+fprintf('Mean Bullwhip Effect = %d after %d sec', a.w4, TimeSpent);
+fprintf('\nTTC = %d', a.TTC);
 
 TimeSpent;
 
-if fileGenerator
+if fileGenerator == true
     directory = 'reports';
     filename = sprintf('report_%d_%d_', simTime, m);
     extension = 'txt';
@@ -369,21 +398,30 @@ if fileGenerator
     end
 
     fprintf(fid, 'Reference stock levels\nFrom To\n');
-    fprintf(fid, '%d\t\t%d \n', [start_xd_min best_xd_min]');
+    fprintf(fid, '%d\t\t%d \n', [start_xd_min best_xd_min]'); 
+    fprintf(fid, 'Transportation Cost\nFrom To\n');
+    fprintf(fid, '%d\t\t%d \n', [a.initialTTC best_TTC]');
+    fprintf(fid, 'Bullwhip Effect\nFrom To\n');
+    fprintf(fid, '%d\t\t%d \n', [a.initialBE best_BE]');  
+
+    for node=1:n
+        fprintf(fid, 'LA changed at node%d \nFrom To\n', node);
+        fprintf(fid, '%d\t\t%d \n', [LA_nom(:,node) best_LA(:,node)]');
+    end
     fprintf(fid, 'Magic factors\nFrom To\n');
     fprintf(fid, '%d\t\t%d \n', [print_initial_mf print_best_mf]');
     fclose(fid);
 end
 
-if chartVisibility
-    a = simulate(a, [914; 523; 293]);
+if chartVisibility == true
+    a = simulate(a, start_xd_min, LA_nom);
     plotter = ChartGenerator(time, simTime, n, a.x, a.u_hist, a.d, a.h);
     stock_level(plotter, 5);
     order_quantity(plotter, 6);
     demand(plotter, 7);
     satisfied_demand(plotter, 8);
 
-    a = simulate(a, start_xd_min);
+    a = simulate(a, start_xd_min, best_LA);
 
     plotter = ChartGenerator(time, simTime, n, a.x, a.u_hist, a.d, a.h);
     stock_level(plotter, 1);
