@@ -7,7 +7,7 @@ beginApplicationTic = tic();
 
 chartVisibility = true;
 fileGenerator = true;
-generations = 30;
+generations = 5000;
 stepRange = 10;
 learningBreak = 500;
 
@@ -25,8 +25,6 @@ x_inf = 100000; % infinite stock at external sources
 generationsDone = 0;
 
 % TOPOLOGY GENERATOR
-simTime = 1000;
-m = 3; % nr of external sources
 
 % network = TopologyGenerator(simTime, m);
 network = FileTopologyGenerator(topologyFilename);
@@ -117,6 +115,11 @@ a = simulate(a, start_xd_min, LA_nom);
 fprintf('Mean Bullwhip Effect = %d', a.w4);
 initial_HC = a.HC;
 a.initialBE = a.w4;
+initialBE1 = a.w1;
+initialBE2 = a.w2;
+initialBE3 = a.w3;
+initialBE4 = a.w4;
+initialBE5 = a.w5;
 a.initialTTC = a.TTC;
 a.initialHC = initial_HC;
 a.alpha = alpha;
@@ -124,7 +127,11 @@ a.beta = beta;
 
 best_HC = a.HC;
 best_TTC = a.TTC;
-best_BE = a.w4;
+best_BE1 = a.w1;
+best_BE2 = a.w2;
+best_BE3 = a.w3;
+best_BE4 = a.w4;
+best_BE5 = a.w5;
 best_LA = a.LA_nom;
 best_xd_min = a.xd(1:n);
 last_good_xdmin = best_xd_min;
@@ -204,12 +211,12 @@ switch methodTypeChars
         end
 
     case char('ga')
-        individuals =GenerateIndividuals(n,m, LA_nom, generationSize);
+        individuals = GenerateIndividuals(n, m, LA_nom, generationSize);
 
         best_set = zeros(n, 1);
-        best_fitness = 0;
+        best_fitness = -999999;
         stop = 0;
-         
+
         gaProcessArchive = GAProcessArchive(topologyFilename);
 
         while generationsDone < generations
@@ -225,7 +232,7 @@ switch methodTypeChars
             unproductivity = 0;
 
             for individualNo = 1:generationSize
-                LAmutated = individuals(:,:, individualNo);
+                LAmutated = individuals(:, :, individualNo);
                 a = simulate(a, start_xd_min, LAmutated);
                 individualFitnesses(individualNo) = a.fitness;
 
@@ -239,7 +246,11 @@ switch methodTypeChars
                     best_HC = a.HC;
                     best_LA = a.LA_nom;
                     best_TTC = a.TTC
-                    best_BE=a.w4
+                    best_BE1 = a.w1;
+                    best_BE2 = a.w2;
+                    best_BE3 = a.w3;
+                    best_BE4 = a.w4
+                    best_BE5 = a.w5;
                     resultGenerationNo = generationsDone
 
                     gaProcessArchive.bestHCFixes(:, end + 1) = [generationsDone; best_HC];
@@ -266,31 +277,31 @@ switch methodTypeChars
             end
 
             fitSum = sum(individualFitnesses);
-            pairs = zeros(n+m,n,1);
+            pairs = zeros(n + m, n, 1);
             addedFirst = false;
 
             while true
                 fitRandom = rand;
 
                 for individualNo = 1:generationSize
-   
-                    summ= (sum(individualFitnesses(1:individualNo)));
-                    sumdiv = summ/fitSum;
+                    summ = (sum(individualFitnesses(1:individualNo)));
+                    sumdiv = summ / fitSum;
+
                     if fitRandom < (sum(individualFitnesses(1:individualNo)) / fitSum)
 
                         if (individualUsed(individualNo) == 1)
                             break;
                         end
-                        
-                        ttt=size(pairs,3);   
-                        if( addedFirst == true )
-                             pairs(:,:,ttt+1) = individuals(:, :, individualNo);                       
+
+                        ttt = size(pairs, 3);
+
+                        if addedFirst == true
+                            pairs(:, :, ttt + 1) = individuals(:, :, individualNo);
                         else
-                            
-                             pairs(:,:,ttt) = individuals(:, :, individualNo);  
-                             addedFirst = true;
+                            pairs(:, :, ttt) = individuals(:, :, individualNo);
+                            addedFirst = true;
                         end
-                        
+
                         individualUsed(individualNo) = 1;
                         break;
                     end
@@ -304,8 +315,8 @@ switch methodTypeChars
                     for individualNo = 1:individualNo
 
                         if (individualUsed(individualNo) == 0)
-                            ttt=size(pairs,3);   
-                            pairs(:,:,ttt+1) = individuals(:, :, individualNo);  
+                            ttt = size(pairs, 3);
+                            pairs(:, :, ttt + 1) = individuals(:, :, individualNo);
                             individualUsed(individualNo) = 1;
                             break;
                         end
@@ -319,10 +330,10 @@ switch methodTypeChars
             i = round(rand(1) * (n - 1)) + 1;
 
             for index = 1:2:generationSize
-                individuals(:,1:i, index) = pairs(:,1:i, index);
-                individuals(:,i + 1:end, index) = pairs(:,i + 1:end, index + 1);
-                individuals(:,1:i, index + 1) = pairs(:,1:i, index + 1);
-                individuals(:,i + 1:end, index + 1) = pairs(:,i + 1:end, index);
+                individuals(:, 1:i, index) = pairs(:, 1:i, index);
+                individuals(:, i + 1:end, index) = pairs(:, i + 1:end, index + 1);
+                individuals(:, 1:i, index + 1) = pairs(:, 1:i, index + 1);
+                individuals(:, i + 1:end, index + 1) = pairs(:, i + 1:end, index);
             end
 
             for individualNo = 1:generationSize
@@ -331,9 +342,9 @@ switch methodTypeChars
                     randomMutation = rand;
 
                     if randomMutation < mutationProbability
-                        laToMutate = individuals(:,:, individualNo);
-                        muteated = GenerateIndividuals(n,m,laToMutate,1);
-                        individuals(:,:, individualNo) = muteated;
+                        laToMutate = individuals(:, :, individualNo);
+                        muteated = GenerateIndividuals(n, m, laToMutate, 1);
+                        individuals(:, :, individualNo) = muteated;
                     end
 
                 end
@@ -398,16 +409,25 @@ if fileGenerator == true
     end
 
     fprintf(fid, 'Reference stock levels\nFrom To\n');
-    fprintf(fid, '%d\t\t%d \n', [start_xd_min best_xd_min]'); 
+    fprintf(fid, '%d\t\t%d \n', [start_xd_min best_xd_min]');
     fprintf(fid, 'Transportation Cost\nFrom To\n');
     fprintf(fid, '%d\t\t%d \n', [a.initialTTC best_TTC]');
-    fprintf(fid, 'Bullwhip Effect\nFrom To\n');
-    fprintf(fid, '%d\t\t%d \n', [a.initialBE best_BE]');  
+    fprintf(fid, 'Bullwhip Effect 1\nFrom To\n');
+    fprintf(fid, '%d\t\t%d \n', [initialBE1 best_BE1]');
+    fprintf(fid, 'Bullwhip Effect 2\nFrom To\n');
+    fprintf(fid, '%d\t\t%d \n', [initialBE2 best_BE2]');
+    fprintf(fid, 'Bullwhip Effect 3\nFrom To\n');
+    fprintf(fid, '%d\t\t%d \n', [initialBE3 best_BE3]');
+    fprintf(fid, 'Bullwhip Effect 4\nFrom To\n');
+    fprintf(fid, '%d\t\t%d \n', [initialBE4 best_BE4]');
+    fprintf(fid, 'Bullwhip Effect 5\nFrom To\n');
+    fprintf(fid, '%d\t\t%d \n', [initialBE5 best_BE5]');
 
-    for node=1:n
+    for node = 1:n
         fprintf(fid, 'LA changed at node%d \nFrom To\n', node);
-        fprintf(fid, '%d\t\t%d \n', [LA_nom(:,node) best_LA(:,node)]');
+        fprintf(fid, '%d\t\t%d \n', [LA_nom(:, node) best_LA(:, node)]');
     end
+
     fprintf(fid, 'Magic factors\nFrom To\n');
     fprintf(fid, '%d\t\t%d \n', [print_initial_mf print_best_mf]');
     fclose(fid);
