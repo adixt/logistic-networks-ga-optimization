@@ -11,7 +11,7 @@ generations = 5000;
 stepRange = 10;
 learningBreak = 500;
 
-methodType = 'ga';
+methodType = 'bbo';
 topologyFilename = 'topologies/2_100_a.mat';
 
 % GA parameters
@@ -125,6 +125,7 @@ a.initialHC = initial_HC;
 a.alpha = alpha;
 a.beta = beta;
 
+best_fitness = -999999;
 best_HC = a.HC;
 best_TTC = a.TTC;
 best_BE1 = a.w1;
@@ -214,7 +215,6 @@ switch methodTypeChars
         individuals = GenerateIndividuals(n, m, LA_nom, generationSize);
 
         best_set = zeros(n, 1);
-        best_fitness = -999999;
         stop = 0;
 
         gaProcessArchive = GAProcessArchive(topologyFilename);
@@ -352,6 +352,259 @@ switch methodTypeChars
             end
 
         end
+
+    case char('bbo')
+        ProbFlag = false; %true or false, whether or not to use probabilities to update emigration rates.
+        DisplayFlag = true;
+        pmodify = 1; % habitat modification probability
+        pmutate = 0.005; % initial mutation probability
+        popsize = 10; % total population size
+        Maxgen = 50; % generation count limit
+        individuals = GenerateIndividuals(n, m, LA_nom, popsize);
+        sizes = size(individuals(:, :, 1));
+        numVar = sizes(2); % number of genes in each population member (equal column size in LA)
+
+        Population = CostFunction(a, start_xd_min, individuals);
+        
+         if Population(1).cost > best_fitness
+                    best_fitness = Population(1).cost;
+                    best_LA = Population(1).chrom;
+         end
+        
+        MinCost = [Population(1).cost];
+        BE = [Population(1).BE];
+        AvgCost = ComputeAveCost(Population);
+        Keep = 2; % elitism parameter: how many of the best habitats to keep from one generation to the next
+        lambdaLower = 0.0; % lower bound for immigration probabilty per gene
+        lambdaUpper = 1; % upper bound for immigration probabilty per gene
+        dt = 1; % step size used for numerical integration of probabilities
+        I = 1; % max immigration rate for each island
+        E = 1; % max emigration rate, for each island
+        P = popsize; % max species count, for each island
+
+        % Initialize the species count probability of each habitat
+        % Later we might want to initialize probabilities based on cost
+        Prob = zeros(popsize, 1);
+
+        for j = 1:length(Population)
+            Prob(j) = 1 / length(Population);
+        end
+
+        % Begin the optimization loop
+        for GenIndex = 1:Maxgen
+            chromKeep = zeros(sizes(1), sizes(2), Keep);
+            costKeep = zeros(Keep, 1);
+            % Save the best habitats in a temporary array.
+            for j = 1:Keep
+                chromKeep(:, :, j) = Population(j).chrom;
+                costKeep(j) = Population(j).cost;
+            end
+
+            % Map cost values to species counts.
+            for i = 1:length(Population)
+
+                if Population(i).cost < inf
+                    Population(i).SpeciesCount = P - i;
+                else
+                    Population(i).SpeciesCount = 0;
+                end
+
+            end
+
+            % Compute immigration rate and emigration rate for each species count.
+            % lambda(i) is the immigration rate for habitat i.
+            % mu(i) is the emigration rate for habitat i.
+            lambda = zeros(length(Population), 1);
+            mu = zeros(length(Population), 1);
+
+            for i = 1:length(Population)
+                lambda(i) = I * (1 - Population(i).SpeciesCount / P);
+                mu(i) = E * Population(i).SpeciesCount / P;
+            end
+
+            if ProbFlag == true
+                ProbDot = zeros(Maxgen);
+                % Compute the time derivative of Prob(i) for each habitat i.
+                for j = 1:length(Population)
+                    % Compute lambda for one less than the species count of habitat i.
+                    lambdaMinus = I * (1 - (Population(j).SpeciesCount - 1) / P);
+                    % Compute mu for one more than the species count of habitat i.
+                    muPlus = E * (Population(j).SpeciesCount + 1) / P;
+                    % Compute Prob for one less than and one more than the species count of habitat i.
+                    % Note that species counts are arranged in an order opposite to that presented in
+                    % MacArthur and Wilson's book - that is, the most fit
+                    % habitat has index 1, which has the highest species count.
+                    if j < length(Population)
+                        ProbMinus = Prob(j + 1);
+                    else
+                        ProbMinus = 0;
+                    end
+
+                    if j > 1
+                        ProbPlus = Prob(j - 1);
+                    else
+                        ProbPlus = 0;
+                    end
+
+                    ProbDot(j) = -(lambda(j) + mu(j)) * Prob(j) + lambdaMinus * ProbMinus + muPlus * ProbPlus;
+                end
+
+                % Compute the new probabilities for each species count.
+                Prob = Prob + ProbDot * dt;
+                Prob = max(Prob, 0);
+                Prob = Prob / sum(Prob);
+            end
+
+            % Now use lambda and mu to decide how much information to share between habitats.
+            lambdaMin = min(lambda);
+            lambdaMax = max(lambda);
+
+            Island = zeros(sizes(1), numVar, Maxgen);
+
+            for k = 1:length(Population)
+
+                if rand > pmodify
+                    continue;
+                end
+
+                % Normalize the immigration rate.
+                lambdaScale = lambdaLower + (lambdaUpper - lambdaLower) * (lambda(k) - lambdaMin) / (lambdaMax - lambdaMin);
+                % Probabilistically input new information into habitat i
+                for j = 1:numVar
+
+                    if rand < lambdaScale
+                        % Pick a habitat from which to obtain a feature
+                        RandomNum = rand * sum(mu);
+                        Select = mu(1);
+                        SelectIndex = 1;
+
+                        while (RandomNum > Select) && (SelectIndex < popsize)
+                            SelectIndex = SelectIndex + 1;
+                            Select = Select + mu(SelectIndex);
+                        end
+
+                        tmp = Population(SelectIndex).chrom(:, j);
+                        Island(:, j, k) = Population(SelectIndex).chrom(:, j);
+                    else
+                        tmp = Population(k).chrom(:, j);
+                        Island(:, j, k) = Population(k).chrom(:, j);
+                    end
+
+                end
+
+            end
+
+            if ProbFlag == true
+                % Mutation
+                Pmax = max(Prob);
+                MutationRate = pmutate * (1 - Prob / Pmax);
+                % Mutate only the worst half of the solutions
+                Population = PopSort(Population);
+
+                for k = round(length(Population) / 2):length(Population)
+
+                    for parnum = 1:numVar
+
+                        if MutationRate(k) > rand
+                            Island(k, parnum) = floor(MinParValue + (MaxParValue - MinParValue + 1) * rand);
+                        end
+
+                    end
+
+                end
+
+            end
+
+            % Replace the habitats with their new versions.
+            for k = 1:length(Population)
+                tmp = Island(:, :, k);
+                Population(k).chrom = tmp;
+            end
+
+            % Make sure each individual is legal.
+            ValidateAllocationForPopulation(Population);
+            % Calculate cost
+            individualsTmp = zeros(sizes(1), sizes(2), length(Population));
+
+            for z = 1:length(Population)
+                individualsTmp(:, :, z) = Population(z).chrom;
+            end
+
+            Population = CostFunction(a, start_xd_min, individualsTmp);
+            % Sort from best to worst
+            Population = PopSort(Population);
+            
+            if Population(1).cost > best_fitness
+                    best_fitness = Population(1).cost;
+                    best_LA = Population(1).chrom;
+            end
+            
+            % Replace the worst with the previous generation's elites.
+            popsize = length(Population);
+
+            for k = 1:Keep
+                Population(n - k + 1).chrom = chromKeep(:, :, k);
+                Population(n - k + 1).cost = costKeep(k);
+            end
+
+            % Make sure the population does not have duplicates.
+            Population = ClearDups(Population);
+            % Sort from best to worst
+            Population = PopSort(Population);
+            % Compute the average cost
+            [AverageCost, nLegal] = ComputeAveCost(Population);
+            % Display info to screen
+            MinCost = [MinCost Population(1).cost];            
+            BE = [BE Population(1).BE];
+            AvgCost = [AvgCost AverageCost];
+
+            if DisplayFlag == true
+                disp(['The best and mean of Generation # ', num2str(GenIndex), ' are ', ...
+                        num2str(MinCost(end)), ' and ', num2str(AvgCost(end))]);
+            end
+
+        end
+
+        Conclude(DisplayFlag, popsize, Maxgen, Population, nLegal, MinCost, BE);
+        MinParValue = 0.001;
+        MaxParValue = 1;
+%         % Obtain a measure of population diversity
+%         for k = 1:length(Population)
+%             Chrom = Population(k).chrom;
+% 
+%             for j = MinParValue:MaxParValue
+%                 %iterate each column
+%                 col = size(Chrom,2);
+%                 indices = [];
+%                 for z =1:col
+%                         colValues = Chrom(:, z);
+%                         tmpIndices =  find(colValues == j);
+%                         in = [indices tmpIndices] ;
+%                       indices = in;
+%                 end
+%               
+%                 CountArr(k, j) = length(indices); % array containing gene counts of each habitat
+%             end
+% 
+%         end
+% 
+%         Hamming = 0;
+% 
+%         for m = 1:length(Population)
+% 
+%             for j = m + 1:length(Population)
+% 
+%                 for k = MinParValue:MaxParValue
+%                     Hamming = Hamming + abs(CountArr(m, k) - CountArr(j, k));
+%                 end
+% 
+%             end
+% 
+%         end
+% 
+%         if DisplayFlag == true
+%             disp(['Diversity measure = ', num2str(Hamming)]);
+%         end
 
     otherwise
         disp('Optimization method not found! Try again!\n')

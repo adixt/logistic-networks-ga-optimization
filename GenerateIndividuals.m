@@ -42,19 +42,22 @@ function LAmutated = MutateIndividuals(n, m, LAToMutate)
 
     end
 
-    ValidateAllocation(n, m, LAmutated);
+    ValidateAllocation(LAmutated);
 end
 
 function v = shuffle(v)
     v = v(randperm(length(v)));
 end
 
-function ValidateAllocation(n, m, LAmutated)
+function ValidateAllocation(LAmutated)
     % Verify if allocation correct - elements in each column should sum up to 1 or 0
-    for j = 1:n
+    columns = size(LAmutated, 2);
+    rows = size(LAmutated, 1);
+
+    for j = 1:columns
         temp = 0;
 
-        for i = 1:n + m
+        for i = 1:rows
             temp = temp + LAmutated(i, j);
         end
 
