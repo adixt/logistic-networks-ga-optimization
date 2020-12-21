@@ -27,12 +27,122 @@ generationsDone = 0;
 % TOPOLOGY GENERATOR
 
 % network = TopologyGenerator(simTime, m);
-network = FileTopologyGenerator(topologyFilename);
-network.TC(4, 1) = 0.18;
-network.TC(5, 2) = 0.26;
-network.TC(2, 3) = 2;
-network.TC(1, 3) = 1.5;
-network.TC(1, 2) = 0.74;
+
+filename = 'test3.mat';
+network = FileTopologyGenerator(filename);
+%tutaj inicjujemy siec 1
+network.n = 5;
+network.TC = zeros(network.n + network.m, network.n);
+TC_UNIT = 0.0415;
+
+%tutaj 3
+network.TC(6, 1) = 20 * TC_UNIT;
+network.TC(7, 2) = 30 * TC_UNIT;
+network.TC(2, 3) = 30 * TC_UNIT;
+network.TC(1, 3) = 50 * TC_UNIT;
+network.TC(1, 2) = 20 * TC_UNIT;
+network.TC(2, 4) = 30 * TC_UNIT;
+network.TC(3, 4) = 50 * TC_UNIT;
+network.TC(4, 5) = 70 * TC_UNIT;
+network.TC(3, 5) = 40 * TC_UNIT;
+network.TC(5, 1) = 80 * TC_UNIT;
+
+% % tutaj 1 new
+% network.TC(4, 1) = 20 * TC_UNIT;
+% network.TC(5, 2) = 30 * TC_UNIT;
+% network.TC(2, 3) = 30 * TC_UNIT;
+% network.TC(1, 3) = 50 * TC_UNIT;
+% network.TC(1, 2) = 20 * TC_UNIT;
+
+% tutaj 2
+% network.TC(6, 1) = 0.34;
+% network.TC(7, 1) = 0.37;
+% network.TC(1, 4) = 0.81;
+% network.TC(1, 3) = 1.2;
+% network.TC(1, 2) = 1.53;
+% network.TC(1, 5) = 0.94;
+
+%%
+
+network.LT = zeros(network.n + network.m, network.n);
+% tutaj 3
+network.LT(6, 1) = 2;
+network.LT(7, 2) = 4;
+network.LT(2, 3) = 3;
+network.LT(1, 3) = 3;
+network.LT(1, 2) = 1;
+network.LT(2, 4) = 3;
+network.LT(3, 4) = 2;
+network.LT(4, 5) = 1;
+network.LT(3, 5) = 4;
+network.LT(5, 1) = 1;
+
+% tutaj 2
+% network.LT(6, 1) = 2;
+% network.LT(7, 1) = 4;
+% network.LT(1, 4) = 1;
+% network.LT(1, 3) = 2;
+% network.LT(1, 2) = 3;
+% network.LT(1, 5) = 4;
+
+% %tutaj 1
+% network.LT(4, 1) = 2;
+% network.LT(5, 2) = 4;
+% network.LT(2, 3) = 3;
+% network.LT(1, 3) = 3;
+% network.LT(1, 2) = 1;
+
+network.L = max(network.LT(:)); % max lead time
+network.simTime = 1000;
+network.LA_nom = zeros(network.n + network.m, network.n);
+network.LA = zeros(network.n + network.m, network.n, network.simTime + 1);
+%tutaj 3
+network.LA_nom(6, 1) = 0.5;
+network.LA_nom(7, 2) = 0.5;
+network.LA_nom(2, 3) = 0.5;
+network.LA_nom(1, 3) = 0.5;
+network.LA_nom(1, 2) = 0.5;
+network.LA_nom(2, 4) = 0.5;
+network.LA_nom(3, 4) = 0.5;
+network.LA_nom(4, 5) = 0.5;
+network.LA_nom(3, 5) = 0.5;
+network.LA_nom(5, 1) = 0.5;
+
+% %tutaj 1
+% network.LA_nom(4, 1) = 1;
+% network.LA_nom(5, 2) = 0.5;
+% network.LA_nom(2, 3) = 0.5;
+% network.LA_nom(1, 3) = 0.5;
+% network.LA_nom(1, 2) = 0.5;
+
+%tutaj 2
+%network.LA_nom(6, 1) = 0.5;
+% network.LA_nom(7, 1) = 0.5;
+% network.LA_nom(1, 4) = 1;
+% network.LA_nom(1, 3) = 1;
+% network.LA_nom(1, 2) = 1;
+% network.LA_nom(1, 5) = 1;
+network.LA(:, :, 1) = network.LA_nom;
+network.d = zeros(network.n, network.simTime + 1);
+%
+%
+%dmax = [10; 15; 20; ]; %tutaj 1
+dmax = [10; 15; 20; 17; 13]; %tutaj 2, 3
+
+for j = 1:network.simTime + 1
+    multiplier = 0.6;
+
+    for k = 1:network.n
+        randomDemand = poissrnd(round(multiplier * dmax(k)));
+
+        % check if randomDemand is smaller than dmax
+        if (randomDemand > dmax(k)); network.d(k, j) = dmax(k); else; network.d(k, j) = randomDemand; end
+    end
+
+end
+
+save(filename, 'network');
+network2 = FileTopologyGenerator(filename);
 TC = network.TC;
 simTime = network.simTime;
 n = network.n;
@@ -112,6 +222,7 @@ a = NetworkSimulator(simTime, n, m, L, LT, LA, d, LA_nom, B_nom, TC);
 % Main loop
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 a = simulate(a, start_xd_min, LA_nom);
+fprintf([repmat('%f\t', 1, size(LA_nom, 2)) '\n'], LA_nom');
 fprintf('Mean Bullwhip Effect = %d', a.w4);
 initial_HC = a.HC;
 a.initialBE = a.w4;
@@ -121,6 +232,7 @@ initialBE3 = a.w3;
 initialBE4 = a.w4;
 initialBE5 = a.w5;
 a.initialTTC = a.TTC;
+fprintf('\nTTC = %d', a.TTC);
 a.initialHC = initial_HC;
 a.alpha = alpha;
 a.beta = beta;
@@ -365,12 +477,12 @@ switch methodTypeChars
         numVar = sizes(2); % number of genes in each population member (equal column size in LA)
 
         Population = CostFunction(a, start_xd_min, individuals);
-        
-         if Population(1).cost > best_fitness
-                    best_fitness = Population(1).cost;
-                    best_LA = Population(1).chrom;
-         end
-        
+
+        if Population(1).cost > best_fitness
+            best_fitness = Population(1).cost;
+            best_LA = Population(1).chrom;
+        end
+
         MinCost = [Population(1).cost];
         BE = [Population(1).BE];
         AvgCost = ComputeAveCost(Population);
@@ -423,7 +535,7 @@ switch methodTypeChars
             end
 
             if ProbFlag == true
-                ProbDot = zeros(Maxgen);
+                ProbDot = zeros(length(Population), 1);
                 % Compute the time derivative of Prob(i) for each habitat i.
                 for j = 1:length(Population)
                     % Compute lambda for one less than the species count of habitat i.
@@ -533,12 +645,12 @@ switch methodTypeChars
             Population = CostFunction(a, start_xd_min, individualsTmp);
             % Sort from best to worst
             Population = PopSort(Population);
-            
+
             if Population(1).cost > best_fitness
-                    best_fitness = Population(1).cost;
-                    best_LA = Population(1).chrom;
+                best_fitness = Population(1).cost;
+                best_LA = Population(1).chrom;
             end
-            
+
             % Replace the worst with the previous generation's elites.
             popsize = length(Population);
 
@@ -554,7 +666,7 @@ switch methodTypeChars
             % Compute the average cost
             [AverageCost, nLegal] = ComputeAveCost(Population);
             % Display info to screen
-            MinCost = [MinCost Population(1).cost];            
+            MinCost = [MinCost Population(1).cost];
             BE = [BE Population(1).BE];
             AvgCost = [AvgCost AverageCost];
 
@@ -568,43 +680,43 @@ switch methodTypeChars
         Conclude(DisplayFlag, popsize, Maxgen, Population, nLegal, MinCost, BE);
         MinParValue = 0.001;
         MaxParValue = 1;
-%         % Obtain a measure of population diversity
-%         for k = 1:length(Population)
-%             Chrom = Population(k).chrom;
-% 
-%             for j = MinParValue:MaxParValue
-%                 %iterate each column
-%                 col = size(Chrom,2);
-%                 indices = [];
-%                 for z =1:col
-%                         colValues = Chrom(:, z);
-%                         tmpIndices =  find(colValues == j);
-%                         in = [indices tmpIndices] ;
-%                       indices = in;
-%                 end
-%               
-%                 CountArr(k, j) = length(indices); % array containing gene counts of each habitat
-%             end
-% 
-%         end
-% 
-%         Hamming = 0;
-% 
-%         for m = 1:length(Population)
-% 
-%             for j = m + 1:length(Population)
-% 
-%                 for k = MinParValue:MaxParValue
-%                     Hamming = Hamming + abs(CountArr(m, k) - CountArr(j, k));
-%                 end
-% 
-%             end
-% 
-%         end
-% 
-%         if DisplayFlag == true
-%             disp(['Diversity measure = ', num2str(Hamming)]);
-%         end
+        %         % Obtain a measure of population diversity
+        %         for k = 1:length(Population)
+        %             Chrom = Population(k).chrom;
+        %
+        %             for j = MinParValue:MaxParValue
+        %                 %iterate each column
+        %                 col = size(Chrom,2);
+        %                 indices = [];
+        %                 for z =1:col
+        %                         colValues = Chrom(:, z);
+        %                         tmpIndices =  find(colValues == j);
+        %                         in = [indices tmpIndices] ;
+        %                       indices = in;
+        %                 end
+        %
+        %                 CountArr(k, j) = length(indices); % array containing gene counts of each habitat
+        %             end
+        %
+        %         end
+        %
+        %         Hamming = 0;
+        %
+        %         for m = 1:length(Population)
+        %
+        %             for j = m + 1:length(Population)
+        %
+        %                 for k = MinParValue:MaxParValue
+        %                     Hamming = Hamming + abs(CountArr(m, k) - CountArr(j, k));
+        %                 end
+        %
+        %             end
+        %
+        %         end
+        %
+        %         if DisplayFlag == true
+        %             disp(['Diversity measure = ', num2str(Hamming)]);
+        %         end
 
     otherwise
         disp('Optimization method not found! Try again!\n')

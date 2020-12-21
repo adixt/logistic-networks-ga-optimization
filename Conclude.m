@@ -23,7 +23,7 @@ function Conclude(DisplayFlag, popsize, Maxgen, Population, nLegal, MinCost, BE)
         disp([num2str(NumDups), ' duplicates in final population.']);
         disp([num2str(nLegal), ' legal individuals in final population.']);
         % Display the best solution
-        Chrom = sort(Population(1).chrom);
+        Chrom = Population(1).chrom;
         disp('Best chromosome = ');
         fprintf([repmat('%f\t', 1, size(Chrom, 2)) '\n'], Chrom');
         % Plot some results
