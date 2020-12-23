@@ -10,37 +10,38 @@ function [Population] = ClearDups(Population)
             Chrom2 = Population(j).chrom;
 
             if isequal(Chrom1, Chrom2)
-                %% MUTATE RANDOM COLUMN
-                % max = size(Population(j).chrom, 2);
+                % MUTATE RANDOM COLUMN
+                max = size(Population(j).chrom, 2);
 
-                % columnNo = ceil(max * rand);
-                % LAcolumn = Population(j).chrom(:, columnNo);
-                % indiciesWithNonzeroLA = find(LAcolumn);
-                % sizeLA = size(indiciesWithNonzeroLA, 1);
+                columnNo = ceil(max * rand);
+                LAcolumn = Population(j).chrom(:, columnNo);
+                indiciesWithNonzeroLA = find(LAcolumn);
+                sizeLA = size(indiciesWithNonzeroLA, 1);
 
-                % if (sizeLA == 1)
-                %     sizeOne = true;
+                if (sizeLA == 1)
+                    sizeOne = true;
 
-                %     while (sizeOne == true)
-                %         columnNo = ceil(max * rand);
-                %         LAcolumn = Population(j).chrom(:, columnNo);
-                %         indiciesWithNonzeroLA = find(LAcolumn);
-                %         sizeLA = size(indiciesWithNonzeroLA, 1);
+                    while (sizeOne == true)
+                        columnNo = ceil(max * rand);
+                        LAcolumn = Population(j).chrom(:, columnNo);
+                        indiciesWithNonzeroLA = find(LAcolumn);
+                        sizeLA = size(indiciesWithNonzeroLA, 1);
 
-                %         if (sizeLA ~= 1)
-                %             sizeOne = false;
-                %         end
+                        if (sizeLA ~= 1)
+                            sizeOne = false;
+                        end
 
-                %     end
+                    end
 
-                % end
+                end
 
-                % LAcolumnMutated = MutateColumn(Population(j).chrom, columnNo);
-                % Population(j).chrom(:, columnNo) = LAcolumnMutated;
+                LAcolumnMutated = MutateColumn(Population(j).chrom, columnNo);
+                Population(j).chrom(:, columnNo) = LAcolumnMutated;
 
-                %%
-                LAMutated = MutateIndividuals(Population(j).chrom);
-                Population(j).chrom = LAMutated;
+                % % OR MUTATE ENTIRE CHROM
+                % LAMutated = MutateIndividuals(Population(j).chrom);
+                % Population(j).chrom = LAMutated;
+                % %
             end
 
         end
