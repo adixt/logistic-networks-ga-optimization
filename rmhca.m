@@ -47,6 +47,20 @@ network.TC(4, 5) = 70 * TC_UNIT;
 network.TC(3, 5) = 40 * TC_UNIT;
 network.TC(5, 1) = 80 * TC_UNIT;
 
+% %tutaj 4
+% network.TC(6, 1) = 20 * TC_UNIT;
+% network.TC(7, 2) = 30 * TC_UNIT;
+% network.TC(2, 3) = 30 * TC_UNIT;
+% network.TC(1, 3) = 50 * TC_UNIT;
+% network.TC(1, 2) = 20 * TC_UNIT;
+% network.TC(2, 4) = 30 * TC_UNIT;
+% network.TC(3, 4) = 50 * TC_UNIT;
+% network.TC(4, 5) = 70 * TC_UNIT;
+% network.TC(3, 5) = 40 * TC_UNIT;
+% network.TC(5, 1) = 80 * TC_UNIT;
+% network.TC(4, 1) = 90 * TC_UNIT;
+% network.TC(5, 2) = 70 * TC_UNIT;
+
 % % tutaj 1 new
 % network.TC(4, 1) = 20 * TC_UNIT;
 % network.TC(5, 2) = 30 * TC_UNIT;
@@ -76,6 +90,20 @@ network.LT(3, 4) = 2;
 network.LT(4, 5) = 1;
 network.LT(3, 5) = 4;
 network.LT(5, 1) = 1;
+
+% % tutaj 4
+% network.LT(6, 1) = 2;
+% network.LT(7, 2) = 4;
+% network.LT(2, 3) = 3;
+% network.LT(1, 3) = 3;
+% network.LT(1, 2) = 1;
+% network.LT(2, 4) = 3;
+% network.LT(3, 4) = 2;
+% network.LT(4, 5) = 1;
+% network.LT(3, 5) = 4;
+% network.LT(5, 1) = 1;
+% network.LT(4, 1) = 3;
+% network.LT(5, 2) = 2;
 
 % tutaj 2
 % network.LT(6, 1) = 2;
@@ -108,6 +136,20 @@ network.LA_nom(4, 5) = 0.5;
 network.LA_nom(3, 5) = 0.5;
 network.LA_nom(5, 1) = 0.5;
 
+% %tutaj 4
+% network.LA_nom(6, 1) = 0.334;
+% network.LA_nom(7, 2) = 0.334;
+% network.LA_nom(2, 3) = 0.5;
+% network.LA_nom(1, 3) = 0.5;
+% network.LA_nom(1, 2) = 0.333;
+% network.LA_nom(2, 4) = 0.5;
+% network.LA_nom(3, 4) = 0.5;
+% network.LA_nom(4, 5) = 0.5;
+% network.LA_nom(3, 5) = 0.5;
+% network.LA_nom(5, 1) = 0.333;
+% network.LA_nom(4, 1) = 0.333;
+% network.LA_nom(5, 2) = 0.333;
+
 % %tutaj 1
 % network.LA_nom(4, 1) = 1;
 % network.LA_nom(5, 2) = 0.5;
@@ -127,7 +169,7 @@ network.d = zeros(network.n, network.simTime + 1);
 %
 %
 %dmax = [10; 15; 20; ]; %tutaj 1
-dmax = [10; 15; 20; 17; 13]; %tutaj 2, 3
+dmax = [10; 15; 20; 17; 13]; %tutaj 2, 3, 4
 
 for j = 1:network.simTime + 1
     multiplier = 0.6;
@@ -324,7 +366,7 @@ switch methodTypeChars
         end
 
     case char('ga')
-        individuals = GenerateIndividuals(n, m, LA_nom, generationSize);
+        individuals = GenerateIndividuals(LA_nom, generationSize);
 
         best_set = zeros(n, 1);
         stop = 0;
@@ -455,7 +497,7 @@ switch methodTypeChars
 
                     if randomMutation < mutationProbability
                         laToMutate = individuals(:, :, individualNo);
-                        muteated = GenerateIndividuals(n, m, laToMutate, 1);
+                        muteated = GenerateIndividuals(laToMutate, 1);
                         individuals(:, :, individualNo) = muteated;
                     end
 
@@ -472,7 +514,7 @@ switch methodTypeChars
         pmutate = 0.005; % initial mutation probability
         popsize = 10; % total population size
         Maxgen = 50; % generation count limit
-        individuals = GenerateIndividuals(n, m, LA_nom, popsize);
+        individuals = GenerateIndividuals(LA_nom, popsize);
         sizes = size(individuals(:, :, 1));
         numVar = sizes(2); % number of genes in each population member (equal column size in LA)
 
@@ -721,7 +763,6 @@ switch methodTypeChars
     otherwise
         disp('Optimization method not found! Try again!\n')
 end
-
 a = simulate(a, best_xd_min, best_LA);
 
 TimeSpent = toc(beginApplicationTic);
