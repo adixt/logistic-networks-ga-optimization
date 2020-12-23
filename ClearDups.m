@@ -9,59 +9,43 @@ function [Population] = ClearDups(Population)
         for j = i + 1:length(Population)
             Chrom2 = Population(j).chrom;
 
-            % if isequal(Chrom1, Chrom2)
-            max = size(Population(j).chrom, 2);
+            if isequal(Chrom1, Chrom2)
+                %% MUTATE RANDOM COLUMN
+                % max = size(Population(j).chrom, 2);
 
-            column = ceil(max * rand);
-            LAcolumn = Population(j).chrom(:, column);
-            indiciesWithNonzeroLA = find(LAcolumn);
-            sizeLA = size(indiciesWithNonzeroLA, 1);
+                % columnNo = ceil(max * rand);
+                % LAcolumn = Population(j).chrom(:, columnNo);
+                % indiciesWithNonzeroLA = find(LAcolumn);
+                % sizeLA = size(indiciesWithNonzeroLA, 1);
 
-            LAcolumnMutated = zeros(size(Population(j).chrom, 1), 1);
-            indiciesWithNonzeroLA = shuffle(indiciesWithNonzeroLA);
+                % if (sizeLA == 1)
+                %     sizeOne = true;
 
-            if (sizeLA == 1)
-                sizeOne = true;
+                %     while (sizeOne == true)
+                %         columnNo = ceil(max * rand);
+                %         LAcolumn = Population(j).chrom(:, columnNo);
+                %         indiciesWithNonzeroLA = find(LAcolumn);
+                %         sizeLA = size(indiciesWithNonzeroLA, 1);
 
-                while (sizeOne == true)
-                    column = ceil(max * rand);
-                    LAcolumn = Population(j).chrom(:, column);
-                    indiciesWithNonzeroLA = find(LAcolumn);
-                    sizeLA = size(indiciesWithNonzeroLA, 1);
+                %         if (sizeLA ~= 1)
+                %             sizeOne = false;
+                %         end
 
-                    if (sizeLA ~= 1)
-                        sizeOne = false;
-                    end
+                %     end
 
-                end
+                % end
 
+                % LAcolumnMutated = MutateColumn(Population(j).chrom, columnNo);
+                % Population(j).chrom(:, columnNo) = LAcolumnMutated;
+
+                %%
+                LAMutated = MutateIndividuals(Population(j).chrom);
+                Population(j).chrom = LAMutated;
             end
-
-            for s = 1:sizeLA
-                idx = indiciesWithNonzeroLA(s);
-                valueToMutate = LAcolumn(idx);
-
-                if (s ~= sizeLA)
-                    valueMutated = rand(1) * valueToMutate;
-                    LAcolumnMutated(idx) = valueMutated;
-                else
-                    allAboveThis = sum(LAcolumnMutated);
-                    last = 1 - allAboveThis;
-                    LAcolumnMutated(idx) = last;
-                end
-
-            end
-
-            Population(j).chrom(:, column) = LAcolumnMutated;
-            %end
 
         end
 
     end
 
     return;
-end
-
-function v = shuffle(v)
-    v = v(randperm(length(v)));
 end
