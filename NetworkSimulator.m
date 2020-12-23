@@ -205,7 +205,7 @@ classdef NetworkSimulator
             %end
 
             if obj.initialTTC
-                fit = obj.TTC * obj.w3 * obj.satisfiedRate * -1;
+                fit = obj.TTC * obj.w3 / obj.satisfiedRate * -1;
                 obj.fitness = fit;
             end
 
