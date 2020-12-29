@@ -204,10 +204,10 @@ classdef NetworkSimulator
             %    obj.fitness = (1 - (obj.HC / obj.initialHC))^obj.alpha * obj.satisfiedRate^obj.beta + 1;
             %end
 
-            if obj.initialTTC
+            % if obj.initialTTC
                 fit = obj.TTC * obj.w3 / obj.satisfiedRate * -1;
                 obj.fitness = fit;
-            end
+            % end
 
             %             obj.fitness = 1+(10000000/(round(obj.HC)+1)) * power((1/(2 - obj.satisfiedRate)), 60);
         end
