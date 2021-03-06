@@ -31,9 +31,16 @@ generationsDone = 0;
 filename = 'test3.mat';
 network = FileTopologyGenerator(filename);
 %tutaj inicjujemy siec 1
-network.n = 8;
+network.n = 3;
 network.TC = zeros(network.n + network.m, network.n);
 TC_UNIT = 0.0415;
+%tutaj Ivanow 0
+network.TC(4, 1) = 32 * TC_UNIT;
+network.TC(1, 3) = 77 * TC_UNIT;
+network.TC(1, 2) = 75 * TC_UNIT;
+network.TC(2, 3) = 59 * TC_UNIT;
+network.TC(5, 2) = 50 * TC_UNIT;
+
 % %tutaj Ivanow 1
 % network.TC(6, 1) = 32 * TC_UNIT;
 % network.TC(1, 3) = 77 * TC_UNIT;
@@ -42,34 +49,34 @@ TC_UNIT = 0.0415;
 % network.TC(2, 3) = 59 * TC_UNIT;
 % network.TC(3, 5) = 60 * TC_UNIT;
 
-%tutaj Ivanow 2
-network.TC(9, 1) = 32 * TC_UNIT;
-network.TC(1, 3) = 77 * TC_UNIT;
-network.TC(3, 4) = 58 * TC_UNIT;
-network.TC(10, 2) = 50 * TC_UNIT;
-network.TC(2, 3) = 59 * TC_UNIT;
-network.TC(3, 5) = 60 * TC_UNIT;
+% %tutaj Ivanow 2
+% network.TC(9, 1) = 32 * TC_UNIT;
+% network.TC(1, 3) = 77 * TC_UNIT;
+% network.TC(3, 4) = 58 * TC_UNIT;
+% network.TC(10, 2) = 50 * TC_UNIT;
+% network.TC(2, 3) = 59 * TC_UNIT;
+% network.TC(3, 5) = 60 * TC_UNIT;
 
-network.TC(9, 2) = 85 * TC_UNIT;
-network.TC(9, 6) = 124 * TC_UNIT;
-network.TC(10, 1) = 75 * TC_UNIT;
-network.TC(10, 6) = 42 * TC_UNIT;
+% network.TC(9, 2) = 85 * TC_UNIT;
+% network.TC(9, 6) = 124 * TC_UNIT;
+% network.TC(10, 1) = 75 * TC_UNIT;
+% network.TC(10, 6) = 42 * TC_UNIT;
 
-network.TC(1, 7) = 92 * TC_UNIT;
-network.TC(2, 7) = 88 * TC_UNIT;
-network.TC(6, 3) = 82 * TC_UNIT;
-network.TC(6, 7) = 47 * TC_UNIT;
+% network.TC(1, 7) = 92 * TC_UNIT;
+% network.TC(2, 7) = 88 * TC_UNIT;
+% network.TC(6, 3) = 82 * TC_UNIT;
+% network.TC(6, 7) = 47 * TC_UNIT;
 
-network.TC(3, 8) = 88 * TC_UNIT;
-network.TC(7, 4) = 69 * TC_UNIT;
-network.TC(7, 5) = 54 * TC_UNIT;
-network.TC(7, 8) = 53 * TC_UNIT;
-%tutaj Ivanow 3
-network.TC(1, 2) = 75 * TC_UNIT;
-network.TC(2, 6) = 42 * TC_UNIT;
-network.TC(3, 7) = 35 * TC_UNIT;
-network.TC(4, 5) = 30 * TC_UNIT;
-network.TC(5, 8) = 38 * TC_UNIT;
+% network.TC(3, 8) = 88 * TC_UNIT;
+% network.TC(7, 4) = 69 * TC_UNIT;
+% network.TC(7, 5) = 54 * TC_UNIT;
+% network.TC(7, 8) = 53 * TC_UNIT;
+% %tutaj Ivanow 3
+% network.TC(1, 2) = 75 * TC_UNIT;
+% network.TC(2, 6) = 42 * TC_UNIT;
+% network.TC(3, 7) = 35 * TC_UNIT;
+% network.TC(4, 5) = 30 * TC_UNIT;
+% network.TC(5, 8) = 38 * TC_UNIT;
 
 % %tutaj 3
 % network.TC(6, 1) = 20 * TC_UNIT;
@@ -115,6 +122,13 @@ network.TC(5, 8) = 38 * TC_UNIT;
 %%
 
 network.LT = zeros(network.n + network.m, network.n);
+%tutaj Ivanow 0
+network.LT(4, 1) = 2;
+network.LT(1, 3) = 4;
+network.LT(1, 2) = 4;
+network.LT(2, 3) = 4;
+network.LT(5, 2) = 4;
+
 % %tutaj Ivanow 1
 % network.LT(6, 1) = 2;
 % network.LT(1, 3) = 4;
@@ -123,34 +137,35 @@ network.LT = zeros(network.n + network.m, network.n);
 % network.LT(2, 3) = 4;
 % network.LT(3, 5) = 3;
 
-%tutaj Ivanow 2
-network.LT(9, 1) = 2;
-network.LT(1, 3) = 4;
-network.LT(3, 4) = 4;
-network.LT(10, 2) = 4;
-network.LT(2, 3) = 4;
-network.LT(3, 5) = 3;
+% %tutaj Ivanow 2
+% network.LT(9, 1) = 2;
+% network.LT(1, 3) = 4;
+% network.LT(3, 4) = 4;
+% network.LT(10, 2) = 4;
+% network.LT(2, 3) = 4;
+% network.LT(3, 5) = 3;
 
-network.LT(9, 2) = 5;
-network.LT(9, 6) = 7;
-network.LT(10, 1) = 5;
-network.LT(10, 6) = 3;
+% network.LT(9, 2) = 5;
+% network.LT(9, 6) = 7;
+% network.LT(10, 1) = 5;
+% network.LT(10, 6) = 3;
 
-network.LT(1, 7) = 6;
-network.LT(2, 7) = 5;
-network.LT(6, 3) = 6;
-network.LT(6, 7) = 3;
+% network.LT(1, 7) = 6;
+% network.LT(2, 7) = 5;
+% network.LT(6, 3) = 6;
+% network.LT(6, 7) = 3;
 
-network.LT(3, 8) = 6;
-network.LT(7, 4) = 5;
-network.LT(7, 5) = 3;
-network.LT(7, 8) = 3;
-%tutaj Ivanow 3
-network.LT(1, 2) = 4;
-network.LT(2, 6) = 4;
-network.LT(3, 7) = 3;
-network.LT(4, 5) = 2;
-network.LT(5, 8) = 2;
+% network.LT(3, 8) = 6;
+% network.LT(7, 4) = 5;
+% network.LT(7, 5) = 3;
+% network.LT(7, 8) = 3;
+
+% %tutaj Ivanow 3
+% network.LT(1, 2) = 4;
+% network.LT(2, 6) = 4;
+% network.LT(3, 7) = 3;
+% network.LT(4, 5) = 2;
+% network.LT(5, 8) = 2;
 
 % % tutaj 3
 % network.LT(6, 1) = 2;
@@ -197,6 +212,13 @@ network.L = max(network.LT(:)); % max lead time
 network.simTime = 1000;
 network.LA_nom = zeros(network.n + network.m, network.n);
 network.LA = zeros(network.n + network.m, network.n, network.simTime + 1);
+%tutaj Ivanow 0
+network.LA_nom(4, 1) = 1;
+network.LA_nom(1, 3) = 0.5;
+network.LA_nom(1, 2) = 0.5;
+network.LA_nom(2, 3) = 0.5;
+network.LA_nom(5, 2) = 0.5;
+
 % %tutaj Ivanow 1
 % network.LA_nom(6, 1) = 1;
 % network.LA_nom(1, 3) = 0.5;
@@ -227,34 +249,35 @@ network.LA = zeros(network.n + network.m, network.n, network.simTime + 1);
 % network.LA_nom(7, 4) = 0.5;
 % network.LA_nom(7, 5) = 0.5;
 % network.LA_nom(7, 8) = 0.5;
-%tutaj Ivanow 3
-network.LA_nom(9, 1) = 0.5;
-network.LA_nom(1, 3) = 0.334;
-network.LA_nom(3, 4) = 0.5;
-network.LA_nom(10, 2) = 0.334;
-network.LA_nom(2, 3) = 0.333;
-network.LA_nom(3, 5) = 0.334;
 
-network.LA_nom(9, 2) = 0.333;
-network.LA_nom(9, 6) = 0.334;
-network.LA_nom(10, 1) = 0.5;
-network.LA_nom(10, 6) = 0.333;
+% %tutaj Ivanow 3
+% network.LA_nom(9, 1) = 0.5;
+% network.LA_nom(1, 3) = 0.334;
+% network.LA_nom(3, 4) = 0.5;
+% network.LA_nom(10, 2) = 0.334;
+% network.LA_nom(2, 3) = 0.333;
+% network.LA_nom(3, 5) = 0.334;
 
-network.LA_nom(1, 7) = 0.25;
-network.LA_nom(2, 7) = 0.25;
-network.LA_nom(6, 3) = 0.333;
-network.LA_nom(6, 7) = 0.25;
+% network.LA_nom(9, 2) = 0.333;
+% network.LA_nom(9, 6) = 0.334;
+% network.LA_nom(10, 1) = 0.5;
+% network.LA_nom(10, 6) = 0.333;
 
-network.LA_nom(3, 8) = 0.334;
-network.LA_nom(7, 4) = 0.5;
-network.LA_nom(7, 5) = 0.333;
-network.LA_nom(7, 8) = 0.333;
+% network.LA_nom(1, 7) = 0.25;
+% network.LA_nom(2, 7) = 0.25;
+% network.LA_nom(6, 3) = 0.333;
+% network.LA_nom(6, 7) = 0.25;
 
-network.LA_nom(1, 2) = 0.333;
-network.LA_nom(2, 6) = 0.333;
-network.LA_nom(3, 7) = 0.25;
-network.LA_nom(4, 5) = 0.333;
-network.LA_nom(5, 8) = 0.333;
+% network.LA_nom(3, 8) = 0.334;
+% network.LA_nom(7, 4) = 0.5;
+% network.LA_nom(7, 5) = 0.333;
+% network.LA_nom(7, 8) = 0.333;
+
+% network.LA_nom(1, 2) = 0.333;
+% network.LA_nom(2, 6) = 0.333;
+% network.LA_nom(3, 7) = 0.25;
+% network.LA_nom(4, 5) = 0.333;
+% network.LA_nom(5, 8) = 0.333;
 
 % %tutaj 3
 % network.LA_nom(6, 1) = 0.5;
@@ -301,8 +324,8 @@ network.LA(:, :, 1) = network.LA_nom;
 network.d = zeros(network.n, network.simTime + 1);
 %
 %
-%dmax = [10; 15; 20; ]; %tutaj 1
-dmax = [10; 15; 20; 17; 13; 18; 16; 19]; %tutaj 2, 3, 4
+dmax = [10; 15; 20; ]; %tutaj 0,1
+% dmax = [10; 15; 20; 17; 13; 18; 16; 19]; %tutaj 2, 3, 4
 
 for j = 1:network.simTime + 1
     multiplier = 0.6;
